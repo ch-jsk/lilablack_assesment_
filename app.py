@@ -1,85 +1,99 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from src.data_processor import load_match_data, MAP_CONFIG
+from src.data_processor import load_day_data, MAP_CONFIG
 from PIL import Image
 
-st.set_page_config(page_title="LILA BLACK: Level Design Tool", layout="wide")
+st.set_page_config(page_title="LILA BLACK Level Design Tool", layout="wide")
 
-st.title("🎯 LILA BLACK Player Journey Visualizer")
-st.sidebar.header("Filters")
+st.title("LILA BLACK Player Journey Visualizer")
+st.markdown("Reconstructing match telemetry for Level Designers.")
 
-# 1. Select Date
+# --- SIDEBAR FILTERS ---
+st.sidebar.header("Global Filters")
 date_folder = st.sidebar.selectbox("Select Date", 
     ["February_10", "February_11", "February_12", "February_13", "February_14"])
 
-@st.cache_data
-def get_data(folder):
-    return load_match_data(f"player_data/{folder}")
+@st.cache_data(show_spinner="Loading day telemetry...")
+def get_cached_data(folder):
+    return load_day_data(f"data/{folder}") # Ensure your folder is named 'data'
 
-df = get_data(date_folder)
+full_day_df = get_cached_data(date_folder)
 
-# 2. Select Map
-map_name = st.sidebar.selectbox("Select Map", df['map_id'].unique())
-map_df = df[df['map_id'] == map_name]
+if full_day_df.empty:
+    st.error("No data found in the selected folder.")
+else:
+    # Select Map
+    map_list = sorted(full_day_df['map_id'].unique())
+    selected_map = st.sidebar.selectbox("Select Map", map_list)
+    map_df = full_day_df[full_day_df['map_id'] == selected_map]
 
-# 3. Select Match
-match_id = st.sidebar.selectbox("Select Match ID", map_df['match_id'].unique())
-match_data = map_df[map_df['match_id'] == match_id].sort_values('ts')
+    # Select Match (This combines all players in that match)
+    match_list = sorted(map_df['match_id'].unique())
+    selected_match = st.sidebar.selectbox("Select Match ID", match_list)
+    
+    # Reconstruct the match
+    match_data = map_df[map_df['match_id'] == selected_match].sort_values('ts')
+    
+    # Bot Toggle
+    show_bots = st.sidebar.checkbox("Include Bots", value=True)
+    if not show_bots:
+        match_data = match_data[match_data['is_bot'] == False]
 
-# 4. Filter Bots
-show_bots = st.sidebar.checkbox("Show Bots", value=True)
-if not show_bots:
-    match_data = match_data[match_data['is_bot'] == False]
+    # --- MAIN UI ---
+    col1, col2 = st.columns([3, 1])
 
-# 5. Timeline Slider
-max_ts = int(match_data['ts'].max())
-time_range = st.slider("Match Timeline (ms)", 0, max_ts, max_ts)
-current_data = match_data[match_data['ts'] <= time_range]
+    with col1:
+        # Timeline Slider
+        max_ts = int(match_data['ts'].max())
+        time_limit = st.slider("Match Progress (Timeline)", 0, max_ts, max_ts)
+        current_data = match_data[match_data['ts'] <= time_limit]
 
-# --- VISUALIZATION ---
-st.subheader(f"Map Analysis: {map_name}")
+        # Draw the Map
+        img = Image.open(MAP_CONFIG[selected_map]['img'])
+        
+        fig = px.scatter(
+            current_data, 
+            x='px_x', y='px_y', 
+            color='event',
+            symbol='is_bot',
+            hover_data=['user_id', 'event', 'ts'],
+            color_discrete_map={
+                'Position': '#3498db',
+                'BotPosition': '#95a5a6',
+                'Kill': '#e74c3c',
+                'Killed': '#9b59b6',
+                'Loot': '#f1c40f',
+                'KilledByStorm': '#e67e22'
+            }
+        )
 
-# Load background image
-img_path = MAP_CONFIG[map_name]['img']
-img = Image.open(img_path)
+        # Draw paths for each player
+        for uid in current_data['user_id'].unique():
+            p_path = current_data[current_data['user_id'] == uid]
+            fig.add_scatter(x=p_path['px_x'], y=p_path['px_y'], mode='lines', 
+                            line=dict(width=1, color='white'), opacity=0.2, showlegend=False)
 
-# Create Plotly Figure
-fig = px.scatter(
-    current_data, 
-    x='px_x', y='px_y', 
-    color='event', 
-    symbol='is_bot',
-    hover_data=['user_id', 'ts', 'y'],
-    title=f"Match ID: {match_id}"
-)
+        fig.update_layout(
+            images=[dict(source=img, xref="x", yref="y", x=0, y=0, sizex=1024, sizey=1024, sizing="stretch", layer="below")],
+            xaxis=dict(range=[0, 1024], visible=False),
+            yaxis=dict(range=[1024, 0], visible=False),
+            width=900, height=900,
+            margin=dict(l=0, r=0, t=30, b=0)
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-# Add paths (lines) for players
-for player in current_data['user_id'].unique():
-    p_data = current_data[current_data['user_id'] == player]
-    fig.add_scatter(x=p_data['px_x'], y=p_data['px_y'], mode='lines', 
-                    line=dict(width=1), opacity=0.3, showlegend=False)
-
-# Overlay on the Minimap
-fig.update_layout(
-    images=[dict(
-        source=img,
-        xref="x", yref="y",
-        x=0, y=0,
-        sizex=1024, sizey=1024,
-        sizing="stretch",
-        layer="below")],
-    xaxis=dict(range=[0, 1024], visible=False),
-    yaxis=dict(range=[1024, 0], visible=False), # Flip Y axis to match 0,0 at top-left
-    width=800, height=800,
-    template="plotly_white"
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-# Heatmap Section (Requirement)
-if st.checkbox("Show Heatmap of Kill Zones"):
-    kill_data = map_df[map_df['event'].isin(['Kill', 'BotKill'])]
-    heat_fig = px.density_heatmap(kill_data, x='px_x', y='px_y', nbinsx=50, nbinsy=50, 
-                                 title="Aggregated Kill Heatmap (All Matches)")
-    st.plotly_chart(heat_fig)
+    with col2:
+        st.subheader("Match Stats")
+        st.metric("Total Players", len(match_data['user_id'].unique()))
+        st.metric("Total Events", len(current_data))
+        
+        st.write("### Event Legend")
+        st.info("Dots represent discrete events (Kills, Loot). Lines represent movement paths.")
+        
+        if st.checkbox("Show Kill Heatmap"):
+            # Heatmap of ALL matches on this map for context
+            st.write("Aggregated Kill Zones")
+            kills = map_df[map_df['event'].str.contains('Kill', na=False)]
+            heat = px.density_heatmap(kills, x='px_x', y='px_y', nbinsx=30, nbinsy=30)
+            st.plotly_chart(heat, use_container_width=True)

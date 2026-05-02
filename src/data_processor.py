@@ -12,37 +12,50 @@ MAP_CONFIG = {
 def map_to_pixel(x, z, map_id):
     config = MAP_CONFIG.get(map_id)
     if not config: return 0, 0
-    
-    # Step 1: UV Coords
     u = (x - config["origin_x"]) / config["scale"]
     v = (z - config["origin_z"]) / config["scale"]
-    
-    # Step 2: Pixel Coords (1024x1024)
     px_x = u * 1024
-    px_y = (1 - v) * 1024 # Inverted for top-left origin
+    px_y = (1 - v) * 1024 
     return px_x, px_y
 
 def is_bot(user_id):
-    # UUIDs contain hyphens and letters; Bots are numeric
+    # Based on README: UUIDs (with hyphens) are humans, short numbers are bots
     return str(user_id).isdigit()
 
-def load_match_data(folder_path):
+def load_day_data(folder_path):
+    """Loads all files for a specific day and combines them"""
+    if not os.path.exists(folder_path):
+        return pd.DataFrame()
+
     all_files = [f for f in os.listdir(folder_path) if not f.startswith('.')]
     dfs = []
+    
     for f in all_files:
         path = os.path.join(folder_path, f)
-        table = pq.read_table(path)
-        df = table.to_pandas()
-        # Decode events
-        df['event'] = df['event'].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
-        # Identify Bots
-        df['is_bot'] = df['user_id'].apply(is_bot)
-        dfs.append(df)
+        try:
+            # Pyarrow reads these even without .parquet extension
+            table = pq.read_table(path)
+            df = table.to_pandas()
+            
+            # 1. Clean Event column (bytes to string)
+            df['event'] = df['event'].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
+            
+            # 2. Identify Bots vs Humans
+            df['is_bot'] = df['user_id'].apply(is_bot)
+            
+            # 3. Apply coordinate mapping
+            if not df.empty:
+                map_id = df['map_id'].iloc[0]
+                df[['px_x', 'px_y']] = df.apply(
+                    lambda row: map_to_pixel(row['x'], row['z'], map_id), 
+                    axis=1, result_type='expand'
+                )
+            dfs.append(df)
+        except Exception as e:
+            print(f"Error reading {f}: {e}")
+            continue
     
-    full_df = pd.concat(dfs, ignore_index=True)
-    # Apply coordinate mapping
-    full_df[['px_x', 'px_y']] = full_df.apply(
-        lambda row: map_to_pixel(row['x'], row['z'], row['map_id']), 
-        axis=1, result_type='expand'
-    )
-    return full_df
+    if not dfs:
+        return pd.DataFrame()
+        
+    return pd.concat(dfs, ignore_index=True)
