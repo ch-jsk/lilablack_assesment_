@@ -44,60 +44,57 @@ else:
     col1, col2 = st.columns([3, 1])
 
     with col1:
-      # --- UPDATED TIMELINE SLIDER ---
-    if not match_data.empty:
-        # 1. Convert the 'ts' column to a numeric value (milliseconds from start of match)
-        # This handles the case where Parquet loads 'ts' as a Datetime
-        match_data['elapsed_ms'] = (match_data['ts'] - match_data['ts'].min())
-        
-        # If it's a timedelta (common with Parquet), convert to total milliseconds
-        if hasattr(match_data['elapsed_ms'].dt, 'total_seconds'):
-            match_data['elapsed_ms'] = match_data['elapsed_ms'].dt.total_seconds() * 1000
-        
-        # 2. Get the max time safely
-        max_ms = int(match_data['elapsed_ms'].max())
-        
-        # 3. Create the slider using the numeric milliseconds
-        time_limit = st.slider("Match Progress (ms from start)", 0, max_ms, max_ms)
-        
-        # 4. Filter data for the visualization
-        current_data = match_data[match_data['elapsed_ms'] <= time_limit]
-    else:
-        st.warning("No data found for this selection. Try including bots or selecting a different match.")
-        current_data = pd.DataFrame()
-        # Draw the Map
-        img = Image.open(MAP_CONFIG[selected_map]['img'])
-        
-        fig = px.scatter(
-            current_data, 
-            x='px_x', y='px_y', 
-            color='event',
-            symbol='is_bot',
-            hover_data=['user_id', 'event', 'ts'],
-            color_discrete_map={
-                'Position': '#3498db',
-                'BotPosition': '#95a5a6',
-                'Kill': '#e74c3c',
-                'Killed': '#9b59b6',
-                'Loot': '#f1c40f',
-                'KilledByStorm': '#e67e22'
-            }
-        )
+        # --- UPDATED TIMELINE SLIDER ---
+        if not match_data.empty:
+            # 1. Convert timestamps to elapsed milliseconds
+            match_data['elapsed_ms'] = (match_data['ts'] - match_data['ts'].min())
+            
+            # Convert to total milliseconds if it's a timedelta
+            if hasattr(match_data['elapsed_ms'].dt, 'total_seconds'):
+                match_data['elapsed_ms'] = match_data['elapsed_ms'].dt.total_seconds() * 1000
+            
+            # 2. Get the max time safely
+            max_ms = int(match_data['elapsed_ms'].max()) if len(match_data) > 0 else 0
+            
+            # 3. Timeline Slider
+            time_limit = st.slider("Match Progress (ms)", 0, max_ms, max_ms)
+            current_data = match_data[match_data['elapsed_ms'] <= time_limit]
 
-        # Draw paths for each player
-        for uid in current_data['user_id'].unique():
-            p_path = current_data[current_data['user_id'] == uid]
-            fig.add_scatter(x=p_path['px_x'], y=p_path['px_y'], mode='lines', 
-                            line=dict(width=1, color='white'), opacity=0.2, showlegend=False)
+            # --- VISUALIZATION ---
+            img = Image.open(MAP_CONFIG[selected_map]['img'])
+            
+            fig = px.scatter(
+                current_data, 
+                x='px_x', y='px_y', 
+                color='event',
+                symbol='is_bot',
+                hover_data=['user_id', 'event', 'elapsed_ms'],
+                color_discrete_map={
+                    'Position': '#3498db',
+                    'BotPosition': '#95a5a6',
+                    'Kill': '#e74c3c',
+                    'Killed': '#9b59b6',
+                    'Loot': '#f1c40f',
+                    'KilledByStorm': '#e67e22'
+                }
+            )
 
-        fig.update_layout(
-            images=[dict(source=img, xref="x", yref="y", x=0, y=0, sizex=1024, sizey=1024, sizing="stretch", layer="below")],
-            xaxis=dict(range=[0, 1024], visible=False),
-            yaxis=dict(range=[1024, 0], visible=False),
-            width=900, height=900,
-            margin=dict(l=0, r=0, t=30, b=0)
-        )
-        st.plotly_chart(fig, use_container_width=True)
+            # Draw paths for each player
+            for uid in current_data['user_id'].unique():
+                p_path = current_data[current_data['user_id'] == uid]
+                fig.add_scatter(x=p_path['px_x'], y=p_path['px_y'], mode='lines', 
+                                line=dict(width=1, color='white'), opacity=0.2, showlegend=False)
+
+            fig.update_layout(
+                images=[dict(source=img, xref="x", yref="y", x=0, y=0, sizex=1024, sizey=1024, sizing="stretch", layer="below")],
+                xaxis=dict(range=[0, 1024], visible=False),
+                yaxis=dict(range=[1024, 0], visible=False),
+                width=800, height=800,
+                margin=dict(l=0, r=0, t=30, b=0)
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("No data found for this selection.")
 
     with col2:
         st.subheader("Match Stats")
