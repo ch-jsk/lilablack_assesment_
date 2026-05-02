@@ -44,11 +44,27 @@ else:
     col1, col2 = st.columns([3, 1])
 
     with col1:
-        # Timeline Slider
-        max_ts = int(match_data['ts'].max())
-        time_limit = st.slider("Match Progress (Timeline)", 0, max_ts, max_ts)
-        current_data = match_data[match_data['ts'] <= time_limit]
-
+      # --- UPDATED TIMELINE SLIDER ---
+    if not match_data.empty:
+        # 1. Convert the 'ts' column to a numeric value (milliseconds from start of match)
+        # This handles the case where Parquet loads 'ts' as a Datetime
+        match_data['elapsed_ms'] = (match_data['ts'] - match_data['ts'].min())
+        
+        # If it's a timedelta (common with Parquet), convert to total milliseconds
+        if hasattr(match_data['elapsed_ms'].dt, 'total_seconds'):
+            match_data['elapsed_ms'] = match_data['elapsed_ms'].dt.total_seconds() * 1000
+        
+        # 2. Get the max time safely
+        max_ms = int(match_data['elapsed_ms'].max())
+        
+        # 3. Create the slider using the numeric milliseconds
+        time_limit = st.slider("Match Progress (ms from start)", 0, max_ms, max_ms)
+        
+        # 4. Filter data for the visualization
+        current_data = match_data[match_data['elapsed_ms'] <= time_limit]
+    else:
+        st.warning("No data found for this selection. Try including bots or selecting a different match.")
+        current_data = pd.DataFrame()
         # Draw the Map
         img = Image.open(MAP_CONFIG[selected_map]['img'])
         
