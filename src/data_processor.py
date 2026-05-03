@@ -17,34 +17,24 @@ def map_to_pixel(x, z, map_id):
     px_y = (1 - v) * 1024 
     return px_x, px_y
 
-def get_match_index(folder_path):
-    """Scans filenames to get match/player metadata without loading data into RAM"""
-    if not os.path.exists(folder_path): return pd.DataFrame()
-    
-    files = [f for f in os.listdir(folder_path) if not f.startswith('.')]
-    meta = []
-    for f in files:
-        # Filename format: {user_id}_{match_id}.nakama-0
-        parts = f.split('_')
-        if len(parts) >= 2:
-            u_id = parts[0]
-            m_id = parts[1]
-            meta.append({'filename': f, 'user_id': u_id, 'match_id': m_id, 'is_bot': u_id.isdigit()})
-    return pd.DataFrame(meta)
+def is_bot(user_id):
+    return str(user_id).isdigit()
 
-def load_specific_match(folder_path, filenames):
-    """Only loads the specific parquet files for the selected match"""
+def load_day_data(folder_path):
+    if not os.path.exists(folder_path):
+        return pd.DataFrame()
+    all_files = [f for f in os.listdir(folder_path) if not f.startswith('.')]
     dfs = []
-    for f in filenames:
+    for f in all_files:
         path = os.path.join(folder_path, f)
-        table = pq.read_table(path)
-        df = table.to_pandas()
-        # Clean event column
-        df['event'] = df['event'].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
-        # Add bot flag
-        df['is_bot'] = df['user_id'].apply(lambda x: str(x).isdigit())
-        # Map coords
-        map_id = df['map_id'].iloc[0]
-        df[['px_x', 'px_y']] = df.apply(lambda r: map_to_pixel(r['x'], r['z'], map_id), axis=1, result_type='expand')
-        dfs.append(df)
-    return pd.concat(dfs, ignore_index=True)
+        try:
+            table = pq.read_table(path)
+            df = table.to_pandas()
+            df['event'] = df['event'].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
+            df['is_bot'] = df['user_id'].apply(is_bot)
+            if not df.empty:
+                map_id = df['map_id'].iloc[0]
+                df[['px_x', 'px_y']] = df.apply(lambda r: map_to_pixel(r['x'], r['z'], map_id), axis=1, result_type='expand')
+            dfs.append(df)
+        except: continue
+    return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
