@@ -46,6 +46,12 @@ v = (z - origin_z) / scale
 px_x = u * 1024  
 px_y = (1 - v) * 1024  
 
+Key points:
+- Converts world coordinates → normalized [0,1] space
+- Scales to minimap resolution (1024 × 1024)
+- Inverts Y-axis to match image coordinate system
+- Controlled via map-specific MAP_CONFIG values
+- 
 This ensures correct alignment with the minimap.
 
 ---
