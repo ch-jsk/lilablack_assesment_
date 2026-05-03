@@ -68,7 +68,4 @@ Using the heatmap, we saw:
 
 ### Impact
 - More engaging combat
-- Better game realism
-
-=======
->>>>>>> 1fea3c73f48d3d13cf0aa33da8b57c90e725de0f
+- Better game realism5de0f
