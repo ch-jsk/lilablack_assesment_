@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from src.data_processor import load_day_data, MAP_CONFIG
 from PIL import Image
 
-st.set_page_config(page_title="LILA BLACK Level Design Tool", layout="wide")
+st.set_page_config(page_title="LILA BLACK : Match Visualizer", layout="wide")
 
 # --- 1. ENHANCED EVENT MAPPING (All 8 Types from README) ---
 # We use specific symbols: x for deaths, stars for loot, circles for movement
@@ -20,7 +20,7 @@ EVENT_META = {
     'Loot':          {'color': '#27ae60', 'symbol': 'star',   'label': 'Loot Picked Up'}
 }
 
-st.title("🎯 LILA BLACK: Forensic Match Reconstruction")
+st.title("🎯 LILA BLACK: Match Visualizer")
 
 # --- DATA LOADING ---
 date_folder = st.sidebar.selectbox("Select Date", ["February_10", "February_11", "February_12", "February_13", "February_14"])
