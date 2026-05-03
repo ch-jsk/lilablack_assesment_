@@ -47,7 +47,7 @@ else:
     b = match_data[match_data['is_bot']]['user_id'].unique()
     l_map = {uid: f"P{i+1}" for i, uid in enumerate(h)}
     l_map.update({uid: f"B{i+1}" for i, uid in enumerate(b)})
-    match_data['label'] = match_data['user_id'].map(l_map)
+    match_data['label'] = match_data['user_id'].map(label_map)
 
     # Animation steps
     match_data['time_step'] = pd.cut(match_data['ts'], bins=25, labels=False)

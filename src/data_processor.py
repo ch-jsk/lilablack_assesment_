@@ -18,33 +18,33 @@ def map_to_pixel(x, z, map_id):
     return px_x, px_y
 
 def get_match_index(folder_path):
+    """Scans filenames to get match/player metadata without loading data into RAM"""
     if not os.path.exists(folder_path): return pd.DataFrame()
+    
     files = [f for f in os.listdir(folder_path) if not f.startswith('.')]
     meta = []
     for f in files:
+        # Filename format: {user_id}_{match_id}.nakama-0
         parts = f.split('_')
         if len(parts) >= 2:
-            # We peek at the first row of each file to get the Map ID
-            table = pq.read_table(os.path.join(folder_path, f), columns=['map_id'])
-            m_id = table.to_pandas()['map_id'].iloc[0]
-            meta.append({
-                'filename': f, 
-                'user_id': parts[0], 
-                'match_id': parts[1], 
-                'map_id': m_id,
-                'is_bot': parts[0].isdigit()
-            })
+            u_id = parts[0]
+            m_id = parts[1]
+            meta.append({'filename': f, 'user_id': u_id, 'match_id': m_id, 'is_bot': u_id.isdigit()})
     return pd.DataFrame(meta)
 
 def load_specific_match(folder_path, filenames):
+    """Only loads the specific parquet files for the selected match"""
     dfs = []
     for f in filenames:
-        df = pq.read_table(os.path.join(folder_path, f)).to_pandas()
+        path = os.path.join(folder_path, f)
+        table = pq.read_table(path)
+        df = table.to_pandas()
+        # Clean event column
         df['event'] = df['event'].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
+        # Add bot flag
         df['is_bot'] = df['user_id'].apply(lambda x: str(x).isdigit())
+        # Map coords
         map_id = df['map_id'].iloc[0]
         df[['px_x', 'px_y']] = df.apply(lambda r: map_to_pixel(r['x'], r['z'], map_id), axis=1, result_type='expand')
         dfs.append(df)
-    
-    full_df = pd.concat(dfs, ignore_index=True)
-    return full_df
+    return pd.concat(dfs, ignore_index=True)
