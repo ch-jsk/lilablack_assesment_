@@ -45,8 +45,8 @@ else:
     # Labeling
     h = match_data[~match_data['is_bot']]['user_id'].unique()
     b = match_data[match_data['is_bot']]['user_id'].unique()
-    l_map = {uid: f"P{i+1}" for i, uid in enumerate(h)}
-    l_map.update({uid: f"B{i+1}" for i, uid in enumerate(b)})
+    label_map = {uid: f"P{i+1}" for i, uid in enumerate(h)}
+    label_map.update({uid: f"B{i+1}" for i, uid in enumerate(b)})
     match_data['label'] = match_data['user_id'].map(label_map)
 
     # Animation steps
