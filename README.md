@@ -22,7 +22,7 @@ Link to streamlit app: https://lilablack-assessment.streamlit.app/
 - Humans and bots are visually different
 - Current position is highlighted with labels (P1, B1, etc.)
 
----
+
 
 ### 2. Event Visualization
 Different events are shown using different markers:
@@ -34,7 +34,7 @@ Different events are shown using different markers:
 | KilledByStorm | Storm deaths |
 | Loot | Item pickups |
 
----
+
 
 ### 3. Timeline Slider (Manual Playback)
 - Move the slider to see how the match progresses
@@ -48,7 +48,7 @@ A full autoplay timeline was initially planned but removed due to:
 
 So instead, a **manual slider** is used for stability and control.
 
----
+
 
 ### 4. Heatmap (Kill Zones)
 - Shows areas where most fights happen
@@ -56,14 +56,14 @@ So instead, a **manual slider** is used for stability and control.
   - High-risk zones
   - Popular combat areas
 
----
+
 
 ### 5. Filters
 - Select by **Date**
 - Select by **Map**
 - Select by **Match**
 
----
+
 
 ## 🛠️ Tech Stack
 
