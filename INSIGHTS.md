@@ -72,6 +72,7 @@ Using the heatmap, we saw:
 - Better game realism
 
 ---
+<<<<<<< HEAD
 
 ## Observation
 
@@ -85,3 +86,5 @@ Using the heatmap, we saw:
 - Improve visual guidance for safe zones
 
 ---
+=======
+>>>>>>> 1fea3c73f48d3d13cf0aa33da8b57c90e725de0f
