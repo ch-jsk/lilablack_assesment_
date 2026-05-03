@@ -2,7 +2,6 @@ import pandas as pd
 import os
 import pyarrow.parquet as pq
 
-# Map Configurations from README
 MAP_CONFIG = {
     "AmbroseValley": {"scale": 900, "origin_x": -370, "origin_z": -473, "img": "minimaps/AmbroseValley_Minimap.png"},
     "GrandRift": {"scale": 581, "origin_x": -290, "origin_z": -290, "img": "minimaps/GrandRift_Minimap.png"},
@@ -18,44 +17,34 @@ def map_to_pixel(x, z, map_id):
     px_y = (1 - v) * 1024 
     return px_x, px_y
 
-def is_bot(user_id):
-    # Based on README: UUIDs (with hyphens) are humans, short numbers are bots
-    return str(user_id).isdigit()
+def get_match_index(folder_path):
+    """Scans filenames to get match/player metadata without loading data into RAM"""
+    if not os.path.exists(folder_path): return pd.DataFrame()
+    
+    files = [f for f in os.listdir(folder_path) if not f.startswith('.')]
+    meta = []
+    for f in files:
+        # Filename format: {user_id}_{match_id}.nakama-0
+        parts = f.split('_')
+        if len(parts) >= 2:
+            u_id = parts[0]
+            m_id = parts[1]
+            meta.append({'filename': f, 'user_id': u_id, 'match_id': m_id, 'is_bot': u_id.isdigit()})
+    return pd.DataFrame(meta)
 
-def load_day_data(folder_path):
-    """Loads all files for a specific day and combines them"""
-    if not os.path.exists(folder_path):
-        return pd.DataFrame()
-
-    all_files = [f for f in os.listdir(folder_path) if not f.startswith('.')]
+def load_specific_match(folder_path, filenames):
+    """Only loads the specific parquet files for the selected match"""
     dfs = []
-    
-    for f in all_files:
+    for f in filenames:
         path = os.path.join(folder_path, f)
-        try:
-            # Pyarrow reads these even without .parquet extension
-            table = pq.read_table(path)
-            df = table.to_pandas()
-            
-            # 1. Clean Event column (bytes to string)
-            df['event'] = df['event'].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
-            
-            # 2. Identify Bots vs Humans
-            df['is_bot'] = df['user_id'].apply(is_bot)
-            
-            # 3. Apply coordinate mapping
-            if not df.empty:
-                map_id = df['map_id'].iloc[0]
-                df[['px_x', 'px_y']] = df.apply(
-                    lambda row: map_to_pixel(row['x'], row['z'], map_id), 
-                    axis=1, result_type='expand'
-                )
-            dfs.append(df)
-        except Exception as e:
-            print(f"Error reading {f}: {e}")
-            continue
-    
-    if not dfs:
-        return pd.DataFrame()
-        
+        table = pq.read_table(path)
+        df = table.to_pandas()
+        # Clean event column
+        df['event'] = df['event'].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
+        # Add bot flag
+        df['is_bot'] = df['user_id'].apply(lambda x: str(x).isdigit())
+        # Map coords
+        map_id = df['map_id'].iloc[0]
+        df[['px_x', 'px_y']] = df.apply(lambda r: map_to_pixel(r['x'], r['z'], map_id), axis=1, result_type='expand')
+        dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
