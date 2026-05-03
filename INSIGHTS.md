@@ -1,5 +1,4 @@
 
-
 ## Insight 1: Players Cluster in Specific Zones
 
 ### What we observed
@@ -23,7 +22,7 @@ Using the heatmap, we saw:
 - Better map utilization
 - More balanced gameplay
 
----
+
 
 ## Insight 2: Early Game is Highly Aggressive
 
@@ -47,7 +46,7 @@ Using the heatmap, we saw:
 - Better retention
 - Less frustration
 
----
+
 
 ## Insight 3: Bots and Humans Move Differently
 
@@ -71,20 +70,5 @@ Using the heatmap, we saw:
 - More engaging combat
 - Better game realism
 
----
-<<<<<<< HEAD
-
-## Observation
-
-### Storm Deaths
-- Some players die to storm instead of combat
-
-### Meaning
-- Poor pathing or unclear extraction routes
-
-### Action
-- Improve visual guidance for safe zones
-
----
 =======
 >>>>>>> 1fea3c73f48d3d13cf0aa33da8b57c90e725de0f
