@@ -1,71 +1,60 @@
+## 1. The "River Bottleneck" (Ambrose Valley)
 
-## Insight 1: Players Cluster in Specific Zones
-
-### What we observed
-Using the heatmap, we saw:
-- High concentration of kills in certain areas
-- Large parts of the map are barely used
+### Observation
+A high density of `KilledByStorm` events occurs near the southern river edge.
 
 ### Evidence
-- Kill heatmap shows dense red zones
-- Sparse activity in outer regions
+Across multiple matches, players consistently reach the river as the storm closes but fail to cross in time, leading to repeated storm deaths in that region.
 
 ### Why it matters
-- Players prefer specific routes or loot areas
-- Other parts of the map feel “dead”
+This creates "unfair" deaths where players are blocked by terrain rather than gameplay decisions.
 
 ### Actionable Steps
-- Improve loot distribution in low-traffic areas
-- Add incentives (objectives, rewards)
+Introduce a crossing mechanism (e.g., a small bridge or stepping stones) in this region.
 
 ### Impact
-- Better map utilization
-- More balanced gameplay
+- Reduces frustration from unavoidable deaths  
+- Encourages exploration of southern areas  
+- Improves overall player experience  
 
+---
 
+## 2. Bot "Dead Zones" (Grand Rift)
 
-## Insight 2: Early Game is Highly Aggressive
-
-### What we observed
-- Many kills happen early in matches
-- Players engage quickly after spawning
+### Observation
+The North-East quadrant shows almost no human activity.
 
 ### Evidence
-- Kill events appear early in timeline slider
-- Dense event clustering at start
+Human player paths cluster around central areas, while bot movement patterns are concentrated in the North-East with minimal interaction between the two.
 
 ### Why it matters
-- Early deaths reduce player engagement
-- New players may struggle
+This creates underutilized map space and reduces meaningful player-bot encounters.
 
 ### Actionable Steps
-- Increase spawn distance between players
-- Add safe zones early game
+Place high-value loot or objectives in this quadrant to attract human players.
 
 ### Impact
-- Better retention
-- Less frustration
+- Increases map utilization  
+- Creates more player-bot interactions  
+- Improves gameplay variety  
 
+---
 
+## 3. Safe Looting Corridor vs Combat Zones
 
-## Insight 3: Bots and Humans Move Differently
-
-### What we observed
-- Bots follow simpler, predictable paths
-- Humans show more dynamic movement
+### Observation
+There appears to be a low-risk path along the western edge where players can gather loot without entering combat-heavy zones.
 
 ### Evidence
-- Bot paths are smoother / linear
-- Human paths show zig-zag and clustering
+Comparing player movement paths with kill heatmaps shows a clear separation between high-loot routes and high-combat areas.
 
 ### Why it matters
-- Bots may feel unrealistic
-- Experienced players can exploit this
+Players may avoid core gameplay (combat) while still progressing effectively.
 
 ### Actionable Steps
-- Improve bot AI movement randomness
-- Add adaptive behavior
+Slightly shift extraction points closer to central zones or redistribute loot to encourage risk-reward balance.
 
 ### Impact
-- More engaging combat
-- Better game realism5de0f
+- Encourages more player encounters  
+- Maintains game tension  
+- Balances looting vs combat gameplay  
