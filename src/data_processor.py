@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import pyarrow.parquet as pq
 
+# Map Configurations from README
 MAP_CONFIG = {
     "AmbroseValley": {"scale": 900, "origin_x": -370, "origin_z": -473, "img": "minimaps/AmbroseValley_Minimap.png"},
     "GrandRift": {"scale": 581, "origin_x": -290, "origin_z": -290, "img": "minimaps/GrandRift_Minimap.png"},
@@ -20,11 +21,9 @@ def map_to_pixel(x, z, map_id):
 def get_match_index(folder_path):
     """Scans filenames to get match/player metadata without loading data into RAM"""
     if not os.path.exists(folder_path): return pd.DataFrame()
-    
     files = [f for f in os.listdir(folder_path) if not f.startswith('.')]
     meta = []
     for f in files:
-        # Filename format: {user_id}_{match_id}.nakama-0
         parts = f.split('_')
         if len(parts) >= 2:
             u_id = parts[0]
@@ -33,18 +32,16 @@ def get_match_index(folder_path):
     return pd.DataFrame(meta)
 
 def load_specific_match(folder_path, filenames):
-    """Only loads the specific parquet files for the selected match"""
+    """Only loads the specific parquet files for the selected match to save RAM"""
     dfs = []
     for f in filenames:
         path = os.path.join(folder_path, f)
         table = pq.read_table(path)
         df = table.to_pandas()
-        # Clean event column
         df['event'] = df['event'].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
-        # Add bot flag
         df['is_bot'] = df['user_id'].apply(lambda x: str(x).isdigit())
-        # Map coords
-        map_id = df['map_id'].iloc[0]
-        df[['px_x', 'px_y']] = df.apply(lambda r: map_to_pixel(r['x'], r['z'], map_id), axis=1, result_type='expand')
+        if not df.empty:
+            map_id = df['map_id'].iloc[0]
+            df[['px_x', 'px_y']] = df.apply(lambda r: map_to_pixel(r['x'], r['z'], map_id), axis=1, result_type='expand')
         dfs.append(df)
-    return pd.concat(dfs, ignore_index=True)
+    return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
