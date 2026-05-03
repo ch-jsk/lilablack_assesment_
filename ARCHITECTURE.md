@@ -1,68 +1,139 @@
-Architecture: Player Journey Visualization Tool
+## 1. Overview
 
-1. Tech Stack & Rationale
+This system converts raw parquet gameplay data into an interactive visualization tool.
 
-  - Language: Python 3.10+
-  - Framework: Streamlit.
-      - Why: As a PM, I chose Streamlit to maximize "time-to-insight." It allows
-        for rapid building of interactive data UI without the overhead of a
-        separate frontend/backend repo. It natively handles the dataframes and
-        sliders needed for match playback.
-  - Data Processing: Pandas + PyArrow.
-      - Why: Essential for high-performance reading of Parquet files and
-        efficient filtering of ~89,000 rows.
-  - Visualization: Plotly.
-      - Why: Provides out-of-the-box zoom, pan, and hover tooltips, which are
-        critical for Level Designers to inspect specific death locations or loot
-        drops.
-  - Deployment: Streamlit Community Cloud / Vercel.
-      - Why: Provides a stable, shareable URL with zero-config CI/CD from
-        GitHub.
+Flow:
+Parquet Files → Data Processing → Streamlit App → Plotly Visualization
 
-2. Data Flow
+---
 
-1.  Ingestion: The tool crawls the player_data/ directory.
-2.  Preprocessing:
-      - Decodes event column from bytes to UTF-8.
-      - Identifies is_bot status based on user_id format (Numeric vs. UUID).
-3.  Filtering: User selects Map/Date/Match via the sidebar. Data is sliced in
-    memory to keep the UI snappy.
-4.  Transformation: World coordinates (x, z) are converted to pixel coordinates
-    (px_x, px_z) using map-specific constants.
-5.  Rendering: The minimap image is used as a background layout for a Plotly
-    scatter/line plot.
+## 2. Tech Choices
 
-3. Coordinate Mapping Logic
+| Component | Tool | Reason |
+|----------|------|--------|
+| UI + Backend | Streamlit | Fast development and deployment |
+| Data Processing | Pandas + PyArrow | Efficient parquet handling |
+| Visualization | Plotly | Interactive and flexible |
+| Images | PIL | Simple minimap handling |
 
-To ensure the telemetry overlays perfectly on the 1024x1024 minimaps, I
-implemented the following transformation:
+---
 
-1.  UV Conversion: Translate world coordinates to a 0-1 range.
-      - u = (x - origin_x) / scale
-      - v = (z - origin_z) / scale
-2.  Pixel Mapping:
-      - pixel_x = u * 1024
-      - pixel_y = (1 - v) * 1024
-      - Note: The v axis is inverted (1-v) because game engines often treat the
-        bottom-left as (0,0), while browser images treat the top-left as (0,0).
+## 3. Data Flow
 
-4. Key Assumptions
+### Step 1: Load Data
+- Load all parquet files from selected date folder
+- Each file represents one player in one match
+    pq.read_table(path)
+---
 
-  - Elevation (y): I assumed y (verticality) is secondary for a 2D minimap tool.
-    I have excluded it from the primary visualization but included it in hover
-    tooltips to help designers identify if a kill happened on a roof or ground
-    floor.
-  - Session Continuity: I assumed a "Match" is the primary unit of analysis. The
-    tool combines multiple parquet files sharing a match_id to show the full
-    "story" of the game session.
-  - Bot Detection: Based on the README, I assumed any user_id that is purely
-    numeric (e.g., "1440") is a bot.
+### Step 2: Data Cleaning
+- Decode event column (bytes → string)
+- Identify bots using numeric user_id
+   df['event'] = decode
+   df['is_bot'] = user_id.isdigit()
+---
 
-5. Trade-offs & Decisions
+### Step 3: Coordinate Mapping
 
-| Decision                | Pros                                                         | Cons                                                                                |
-| :---------------------- | :----------------------------------------------------------- | :---------------------------------------------------------------------------------- |
-| **In-Memory Filtering** | Extremely fast interaction for the user once data is loaded. | Memory usage scales with data size; might lag if dataset grows to millions of rows. |
-| **Plotly vs. Canvas**   | Richer interactivity (zoom/hover) and faster development.    | Slightly heavier "feel" compared to a lightweight custom JS canvas.                 |
-| **Flattening Files**    | Combining all players into one view helps see "clashes."     | Initial load time is longer than loading a single player file.                      |
+Game uses 3D world coordinates (x, z).  
+We convert them into 2D minimap pixel coordinates.
+
+Formula:
+
+u = (x - origin_x) / scale  
+v = (z - origin_z) / scale  
+
+px_x = u * 1024  
+px_y = (1 - v) * 1024  
+
+This ensures correct alignment with the minimap.
+
+---
+
+### Step 4: Match Reconstruction
+- Combine all players with same match_id
+- Sort by timestamp
+   match_data.sort_values('ts')
+---
+
+### Step 5: Filtering
+User selects:
+- Date
+- Map
+- Match
+
+Only relevant data is processed and displayed.
+
+---
+
+### Step 6: Visualization
+
+#### Player Paths
+- Lines show movement history
+- Marker shows current position
+
+#### Events
+- Non-movement events plotted as markers
+- Plot markers (kills, loot, etc.)
+
+#### Heatmap
+- Density map of kill events
+
+---
+
+## 4. Performance Decisions
+
+### Caching (Lazy Loading)
+
+Using:
+@st.cache_data
+
+Benefits:
+- Avoids repeated file reads
+- Reduces computation
+- Improves response time
+
+---
+
+### Timeline Tradeoff
+
+Initially implemented autoplay timeline.
+
+Issues faced:
+- Frequent 503 server errors
+- High memory usage
+- Too many UI re-renders in Streamlit
+
+Decision:
+- Replaced with manual timeline slider
+- More stable and controllable
+
+---
+
+## 5. Assumptions
+
+| Area          | Assumption |
+|-----          |----------|
+| Bot detection | Numeric user_id = bot |
+| Timestamp     | Relative within match |
+| Map config    | Fixed values per map |
+
+---
+
+## 6. Tradeoffs
+
+| Decision                  | Tradeoff |
+|---------                  |---------|
+| Streamlit vs React        | Faster dev, less flexibility |
+| Manual slider vs autoplay | Stable but less dynamic |
+| Full dataset loading      | Simpler but heavier |
+
+---
+
+## 7. Limitations
+
+- Limited filtering options
+- Large datasets may slow initial load
+
+---
 

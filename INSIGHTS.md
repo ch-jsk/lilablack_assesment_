@@ -1,19 +1,87 @@
-# Player Behavior Insights - LILA BLACK
 
-### 1. Bottleneck at Extraction (Ambrose Valley)
-*   **Observation:** In Match `b71aaad8...`, 4 out of 6 human players died within the same 50-pixel radius near the bridge.
-*   **Data Back-up:** The Kill event density at coordinates `(X, Z)` is 400% higher than the map average.
-*   **Actionable:** The "Storm" forces players through a single choke point too early. We should add a secondary path (a tunnel or shallow water crossing) to reduce "camping" at the bridge.
-*   **Metric Affected:** Player Retention (reducing frustration deaths).
 
-### 2. The "Dead" North-East Corner
-*   **Observation:** Across 5 days of data, only 2% of Loot events occur in the NE quadrant of Grand Rift.
-*   **Data Back-up:** Heatmap analysis shows high travel (lines) but zero interaction markers (dots) in this area.
-*   **Actionable:** Level Designers should move a "High Tier Loot" crate to this area to encourage players to use the full map.
-*   **Why care:** It prevents the match from becoming too "centralized" and repetitive.
+## Insight 1: Players Cluster in Specific Zones
 
-### 3. Bot Pathing vs. Human Intuition
-*   **Observation:** Bots (`is_bot: True`) move in perfect straight lines, while humans zig-zag near cover.
-*   **Data Back-up:** Compare paths in Lockdown; bots are dying to the Storm more often because they don't navigate around obstacles.
-*   **Actionable:** Improve Bot NavMesh near the map edges. 
-*   **Why care:** If bots die to the environment, they don't provide a challenge to players, making the "Extraction" feel too easy/empty.
+### What we observed
+Using the heatmap, we saw:
+- High concentration of kills in certain areas
+- Large parts of the map are barely used
+
+### Evidence
+- Kill heatmap shows dense red zones
+- Sparse activity in outer regions
+
+### Why it matters
+- Players prefer specific routes or loot areas
+- Other parts of the map feel “dead”
+
+### Actionable Steps
+- Improve loot distribution in low-traffic areas
+- Add incentives (objectives, rewards)
+
+### Impact
+- Better map utilization
+- More balanced gameplay
+
+---
+
+## Insight 2: Early Game is Highly Aggressive
+
+### What we observed
+- Many kills happen early in matches
+- Players engage quickly after spawning
+
+### Evidence
+- Kill events appear early in timeline slider
+- Dense event clustering at start
+
+### Why it matters
+- Early deaths reduce player engagement
+- New players may struggle
+
+### Actionable Steps
+- Increase spawn distance between players
+- Add safe zones early game
+
+### Impact
+- Better retention
+- Less frustration
+
+---
+
+## Insight 3: Bots and Humans Move Differently
+
+### What we observed
+- Bots follow simpler, predictable paths
+- Humans show more dynamic movement
+
+### Evidence
+- Bot paths are smoother / linear
+- Human paths show zig-zag and clustering
+
+### Why it matters
+- Bots may feel unrealistic
+- Experienced players can exploit this
+
+### Actionable Steps
+- Improve bot AI movement randomness
+- Add adaptive behavior
+
+### Impact
+- More engaging combat
+- Better game realism
+
+---
+
+## Observation
+
+### Storm Deaths
+- Some players die to storm instead of combat
+
+### Meaning
+- Poor pathing or unclear extraction routes
+
+### Action
+- Improve visual guidance for safe zones
+
+---
